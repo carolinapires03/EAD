@@ -29,7 +29,7 @@ summary(s_df)
 ###########################################################
 
 
-library(e1071)  # for skewness and kurtosis
+library(e1071)
 
 summary_stats <- data.frame(
   Min = sapply(s_df, min),
@@ -48,6 +48,8 @@ summary_stats <- data.frame(
   Kurtosis = sapply(s_df, kurtosis)
 )
 rounded_stats <- as.data.frame(lapply(summary_stats, function(x) round(x, 3)))
+rounded_stats$Variable <- rownames(summary_stats)
+rounded_stats <- rounded_stats[, c(ncol(rounded_stats), 1:(ncol(rounded_stats)-1))]
 print(format(rounded_stats, scientific = FALSE))
 
 # boxplots
@@ -62,7 +64,45 @@ for (col in names(s_df)) {
   par(mfrow = c(1, 1))
 }
 
+scaled_temp <- scale(s_df[, c("num_votes", "owned", "max_players", "max_time", "min_time", "avg_time")])
+valid_rows <- apply(scaled_temp, 1, function(row) all(row < 3 & row > -3))
+df_clean <- s_df[valid_rows, ]
 
-# TODO: remove some outilers
+# boxplots
+for (col in names(df_clean)) {
+  par(mfrow = c(1, 1))
+  boxplot(df_clean[[col]], main = paste("Boxplot of", col))
+}
+
+# histograms
+for (col in names(df_clean)) {
+  hist(df_clean[[col]], main = paste("Histogram of", col), xlab = col)
+  par(mfrow = c(1, 1))
+}
+
+scaled_df <- as.data.frame(scale(df_clean))
+for (col in names(scaled_df)) {
+  hist(scaled_df[[col]], main = paste("Histogram of", col), xlab = col)
+  par(mfrow = c(1, 1))
+}
+
+
+###########################################################
+              ## BIVARIATE ANALYSIS ##
+###########################################################
+library(corrplot)
+
+# Pearson
+cor_matrix <- cor(scaled_df)
+corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "darkgrey", 
+         cl.cex = 1,    
+         number.cex = 0.8)
+
+# Spearman
+cor_matrix <- cor(scaled_df, method="s")
+corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "darkgrey", 
+         cl.cex = 1,    
+         number.cex = 0.8)
+
 
 
