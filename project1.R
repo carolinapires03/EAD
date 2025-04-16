@@ -156,8 +156,8 @@ corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.8, addCoef.col
          number.cex = 0.8)
 
 # Spearman
-cor_matrix <- cor(scaled_df, method="s")
-corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
+cor_matrix_sp <- cor(scaled_df, method="s")
+corrplot(cor_matrix_sp, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
          cl.cex = 1,    
          number.cex = 0.8)
 
@@ -178,3 +178,25 @@ for (i in 1:(length(vars) - 1)) {
 }
 
 
+###########################################################
+                  ## FACTOR ANALYSIS ##
+###########################################################
+
+
+library(psych)
+
+KMO(cor_matrix_sp) # data is suitable for FA overall MSA = 0.7
+
+# choosing number of factors
+pca_result <- principal(cor_matrix_sp, nfactors = ncol(scaled_df), rotate = "none", covar=FALSE)
+pca_result$values
+# Eigenvalues greater than 1: first 4, but 4th is barely over 1
+
+fa.parallel(cor_matrix_sp, fa = "fa", n.iter = 100, n.obs=nrow(scaled_df))
+# Parallel analysis suggests that the number of factors =  3  and the number of components =  NA 
+
+# Chosen: 3
+
+fa_pa <- fa(cor_matrix_sp, nfactors=3, n.obs=nrow(scaled_df), fm="pa", # principal axis
+   rotate="varimax", SMC=FALSE)
+print(fa_pa)
