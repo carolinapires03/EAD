@@ -1,6 +1,6 @@
 library(dplyr)
 
-bgg = read.csv("/home/barbara/MDS/EAD/EAD/bgg_db_1806.csv", sep=",")
+bgg = read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto1/bgg_db_1806.csv", sep=",")
 
 df <- subset(bgg, select = -c(rank, bgg_url, game_id, names, image_url, designer, year))
 df$num_categories <- sapply(strsplit(df$category, ","), function(x) if (is.na(x[1])) 0 else length(x))
@@ -52,11 +52,21 @@ rounded_stats$Variable <- rownames(summary_stats)
 rounded_stats <- rounded_stats[, c(ncol(rounded_stats), 1:(ncol(rounded_stats)-1))]
 print(format(rounded_stats, scientific = FALSE))
 
+write.csv(rounded_stats, "summary_stats.csv", row.names = FALSE)
+
+
 # boxplots
 for (col in names(s_df)) {
   par(mfrow = c(1, 1))
   boxplot(s_df[[col]], main = paste("Boxplot of", col))
 }
+
+
+# Boxplots - layout 2x2
+#par(mfrow = c(2, 2))
+#for (col in names(s_df)) {
+#  boxplot(s_df[[col]], main = paste("Boxplot of", col))
+#}
 
 # histograms
 for (col in names(s_df)) {
@@ -64,9 +74,18 @@ for (col in names(s_df)) {
   par(mfrow = c(1, 1))
 }
 
+# Histogramas - layout 2x2
+#par(mfrow = c(2, 2))
+#for (col in names(s_df)) {
+#  hist(s_df[[col]], main = paste("Histogram of", col), xlab = col)
+#}
+
+
 scaled_temp <- scale(s_df[, c("num_votes", "owned", "max_players", "max_time", "min_time", "avg_time")])
 valid_rows <- apply(scaled_temp, 1, function(row) all(row < 3 & row > -3))
 df_clean <- s_df[valid_rows, ]
+
+cat("Rows removed:", nrow(s_df) - nrow(df_clean), "\n")
 
 # boxplots
 for (col in names(df_clean)) {
@@ -147,12 +166,7 @@ for (i in 1:(length(numeric_vars) - 1)) {
 scaled_df <- subset(scaled_df, select = -c(avg_time))
 dim(scaled_df)
 
-# General scatterplot matrix
-library(car)
 
-scatterplotMatrix(scaled_df)
-
-# Correlation
 
 # Pearson
 cor_matrix <- cor(scaled_df)
@@ -184,7 +198,40 @@ for (i in 1:(length(vars) - 1)) {
 
 
 ###########################################################
-                  ## FACTOR ANALYSIS ##
+## PRINCIPAL COMPONENT ANALYSIS ##
+###########################################################
+
+#PCA 
+pca_result <- prcomp(scaled_df, center = TRUE, scale. = TRUE)
+
+summary(pca_result)
+
+plot(pca_result, type = "l", main = "Scree Plot of Principal Components")
+
+#variância explicada acumulada
+explained_var <- summary(pca_result)$importance[2, ]  #proporção da variância
+cum_var <- summary(pca_result)$importance[3, ]        #variância acumulada
+
+barplot(explained_var, names.arg = paste0("PC", 1:length(explained_var)),
+        las = 2, main = "Explained Variance by Component", ylab = "Proportion")
+
+#componentes principais 
+biplot(pca_result, scale = 0, cex = 0.6)
+
+#loadings dos componentes
+loadings <- pca_result$rotation
+loadings_df <- as.data.frame(loadings)
+print(loadings_df)
+write.csv(loadings_df, "pca_loadings.csv", row.names = TRUE)
+
+#scores dos jogos nos PCs
+scores <- pca_result$x
+print(loadings_df)
+write.csv(scores, "pca_scores.csv", row.names = TRUE)
+
+
+###########################################################
+## FACTOR ANALYSIS ##
 ###########################################################
 library(psych)
 library(car)
@@ -206,7 +253,7 @@ fa.parallel(cor_matrix, fa = "fa", n.iter = 100, n.obs=nrow(scaled_df))
 
 ### PRINCIPAL AXIS
 fa_pa <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="pa", 
-   rotate="varimax", SMC=FALSE)
+            rotate="varimax", SMC=FALSE)
 
 fa_pa$communality # how much of the variable variance is explained by the common factors
 # sum of squares of the pattern loadings for each variable
@@ -226,7 +273,7 @@ corrplot(fa_pa$residual,is.corr = FALSE, method = "color", type = "upper", tl.ce
 
 ### MIN RESIDUALS (unweighted least squares)
 fa_minres <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="minres", 
-            rotate="varimax", SMC=FALSE)
+                rotate="varimax", SMC=FALSE)
 fa_minres$communality 
 print(fa_minres$loadings, cutoff = 0)
 fa_minres$uniquenesses
@@ -248,3 +295,57 @@ corrplot(fa_wls$residual,is.corr = FALSE, method = "color", type = "upper", tl.c
 # won't use maximum likelihood method because some variables distributions have strong deviations from normality
 
 
+###########################################################
+## MULTIDIMENSIONAL SCALING ##
+###########################################################
+
+library(smacof)
+
+dist_matrix <- dist(scaled_df)
+
+mds_result <- mds(dist_matrix, type = "interval") #Scaled MDS
+
+summary(mds_result)
+
+#bubbleplot: quanto maior a bolha, pior o ajuste
+plot(mds_result, plot.type = "bubbleplot", main = "MDS - Bubbleplot")
+
+#stressplot-mostra o erro por unidade
+plot(mds_result, plot.type = "stressplot", main = "MDS - Stress per Point")
+
+
+#cálculo manual do Normalized Stress
+dhat_matrix <- as.matrix(mds_result$dhat)
+
+d_matrix <- as.matrix(mds_result$confdist)
+
+p_ij <- dhat_matrix[upper.tri(dhat_matrix)]
+d_ij <- d_matrix[upper.tri(d_matrix)]
+
+nominator <- sum((p_ij - d_ij)^2)
+denominator <- sum(p_ij^2)
+
+normalized_stress <- nominator / denominator
+cat("Normalized Stress:", round(normalized_stress, 4), "\n")
+
+# -------------------
+dist_matrix <- dist(scaled_df)
+
+#MDS clássico
+mds_result <- cmdscale(dist_matrix, k = 2, eig = TRUE)
+
+mds_coords <- as.data.frame(mds_result$points)
+colnames(mds_coords) <- c("Dim1", "Dim2")
+
+plot(mds_coords$Dim1, mds_coords$Dim2, 
+     xlab = "Dimension 1", ylab = "Dimension 2", 
+     main = "MDS Plot (Euclidean Distance)", 
+     pch = 19, col = "steelblue")
+abline(h = 0, v = 0, col = "gray", lty = 2)
+
+text(mds_coords$Dim1, mds_coords$Dim2, labels = rownames(mds_coords), cex = 0.6, pos = 3)
+
+#stress
+eig_vals <- mds_result$eig
+var_explained <- sum(eig_vals[1:2]) / sum(abs(eig_vals))
+cat("Variance explained by 2D MDS:", round(var_explained * 100, 2), "%\n")
