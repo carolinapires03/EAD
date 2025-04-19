@@ -147,7 +147,12 @@ for (i in 1:(length(numeric_vars) - 1)) {
 scaled_df <- subset(scaled_df, select = -c(avg_time))
 dim(scaled_df)
 
+# General scatterplot matrix
+library(car)
 
+scatterplotMatrix(scaled_df)
+
+# Correlation
 
 # Pearson
 cor_matrix <- cor(scaled_df)
@@ -181,22 +186,65 @@ for (i in 1:(length(vars) - 1)) {
 ###########################################################
                   ## FACTOR ANALYSIS ##
 ###########################################################
-
-
 library(psych)
+library(car)
 
-KMO(cor_matrix_sp) # data is suitable for FA overall MSA = 0.7
+KMO(cor_matrix) # data is suitable for FA overall MSA = 0.7
+cortest.bartlett(cor_matrix, n = 190) # p.value << 0.05, data is suitable for FA
 
 # choosing number of factors
-pca_result <- principal(cor_matrix_sp, nfactors = ncol(scaled_df), rotate = "none", covar=FALSE)
+pca_result <- principal(cor_matrix, nfactors = ncol(scaled_df), rotate = "none", covar=FALSE)
 pca_result$values
-# Eigenvalues greater than 1: first 4, but 4th is barely over 1
+# Eigenvalues greater than 1: first 3
 
-fa.parallel(cor_matrix_sp, fa = "fa", n.iter = 100, n.obs=nrow(scaled_df))
+fa.parallel(cor_matrix, fa = "fa", n.iter = 100, n.obs=nrow(scaled_df))
 # Parallel analysis suggests that the number of factors =  3  and the number of components =  NA 
 
 # Chosen: 3
 
-fa_pa <- fa(cor_matrix_sp, nfactors=3, n.obs=nrow(scaled_df), fm="pa", # principal axis
+# FA using different methods
+
+### PRINCIPAL AXIS
+fa_pa <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="pa", 
    rotate="varimax", SMC=FALSE)
-print(fa_pa)
+
+fa_pa$communality # how much of the variable variance is explained by the common factors
+# sum of squares of the pattern loadings for each variable
+print(fa_pa$loadings, cutoff = 0)
+# loadings: correlations between the observed variables and the common factors 
+#                 
+# SS loadings     # sum of squares of loadings for each factor
+# Proportion Var  # proportion of total variance explained by each factor.
+# Cumulative Var  # This shows the cumulative variance explained as you add more factors. Total with 3 factors: 55.7%
+
+fa_pa$uniquenesses # specific variance. equal to 1 - communality_i, since all variables have variance = 1 (stardardized bc orthogonal model, done when computing correlation matrix)
+
+# residual correlations, must be small for good fit
+corrplot(fa_pa$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
+         cl.cex = 1,    
+         number.cex = 0.8)  # diagonal = specific variance
+
+### MIN RESIDUALS (unweighted least squares)
+fa_minres <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="minres", 
+            rotate="varimax", SMC=FALSE)
+fa_minres$communality 
+print(fa_minres$loadings, cutoff = 0)
+fa_minres$uniquenesses
+corrplot(fa_minres$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
+         cl.cex = 1,    
+         number.cex = 0.8) 
+
+## WEIGHTED LEAST SQUARES
+
+fa_wls <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="wls", 
+             rotate="varimax", SMC=FALSE)
+fa_wls$communality 
+print(fa_wls$loadings, cutoff = 0)
+fa_wls$uniquenesses
+corrplot(fa_wls$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
+         cl.cex = 1,    
+         number.cex = 0.8) 
+
+# won't use maximum likelihood method because some variables distributions have strong deviations from normality
+
+
