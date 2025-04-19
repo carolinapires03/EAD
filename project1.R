@@ -314,7 +314,7 @@ plot(mds_result, plot.type = "bubbleplot", main = "MDS - Bubbleplot")
 plot(mds_result, plot.type = "stressplot", main = "MDS - Stress per Point")
 
 
-#cálculo manual do Normalized Stress
+#cálculo manual do stress
 dhat_matrix <- as.matrix(mds_result$dhat)
 
 d_matrix <- as.matrix(mds_result$confdist)
