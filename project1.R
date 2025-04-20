@@ -314,7 +314,7 @@ plot(mds_result, plot.type = "bubbleplot", main = "MDS - Bubbleplot")
 plot(mds_result, plot.type = "stressplot", main = "MDS - Stress per Point")
 
 
-#cálculo manual do stress
+#cálculo manual do Normalized Stress
 dhat_matrix <- as.matrix(mds_result$dhat)
 
 d_matrix <- as.matrix(mds_result$confdist)
@@ -327,6 +327,7 @@ denominator <- sum(p_ij^2)
 
 normalized_stress <- nominator / denominator
 cat("Normalized Stress:", round(normalized_stress, 4), "\n")
+#Normalized Stress: 0.0304  < 0.15 ---> modelo bem ajustado
 
 # -------------------
 dist_matrix <- dist(scaled_df)
@@ -348,4 +349,5 @@ text(mds_coords$Dim1, mds_coords$Dim2, labels = rownames(mds_coords), cex = 0.6,
 #stress
 eig_vals <- mds_result$eig
 var_explained <- sum(eig_vals[1:2]) / sum(abs(eig_vals))
-cat("Variance explained by 2D MDS:", round(var_explained * 100, 2), "%\n")
+cat("Variance explained:", round(var_explained * 100, 2), "%\n")
+#Variance explained: 52.7 %
