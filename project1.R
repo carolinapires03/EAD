@@ -166,22 +166,33 @@ for (i in 1:(length(numeric_vars) - 1)) {
 scaled_df <- subset(scaled_df, select = -c(avg_time))
 dim(scaled_df)
 
-
-
 # Pearson
 cor_matrix <- cor(scaled_df)
-corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
-         cl.cex = 1,    
-         number.cex = 0.8)
+corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.6, addCoef.col = "black", 
+         cl.cex = 0.6,    
+         number.cex = 0.5)
 
 # Spearman
 cor_matrix_sp <- cor(scaled_df, method="s")
-corrplot(cor_matrix_sp, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
-         cl.cex = 1,    
-         number.cex = 0.8)
+corrplot(cor_matrix_sp, method = "color", type = "upper", tl.cex = 0.6, addCoef.col = "black", 
+         cl.cex = 0.6,    
+         number.cex = 0.5)
 
 
 # Tests for Correlation
+
+library(ggcorrplot)
+
+p.mat <- cor_pmat(scaled_df)
+
+ggcorrplot(cor_matrix_sp, p.mat = p.mat, 
+           sig.level = 0.05, 
+           insig = "pch", 
+           lab = TRUE, 
+           lab_size=2, 
+           tl.cex=6, 
+           colors = c("darkred", "white", "darkblue"))
+
 
 vars <- names(scaled_df)
 
