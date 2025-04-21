@@ -21,7 +21,7 @@ summary(df)
 set.seed(42)
 s_df <- df %>% sample_n(200)
 
-summary(s_df)
+summary(s_df)  # to assure the distribution didnt change much
 
 
 ###########################################################
@@ -245,7 +245,7 @@ pca_result$values
 # Eigenvalues greater than 1: first 3
 
 fa.parallel(cor_matrix, fa = "fa", n.iter = 100, n.obs=nrow(scaled_df))
-# Parallel analysis suggests that the number of factors =  3  and the number of components =  NA 
+# Parallel analysis suggests that the number of factors =  3
 
 # Chosen: 3
 
@@ -303,7 +303,7 @@ library(smacof)
 
 dist_matrix <- dist(scaled_df)
 
-mds_result <- mds(dist_matrix, type = "interval") #Scaled MDS
+mds_result <- mds(dist_matrix, type = "interval") # Scaled MDS
 
 summary(mds_result)
 
@@ -312,7 +312,6 @@ plot(mds_result, plot.type = "bubbleplot", main = "MDS - Bubbleplot")
 
 #stressplot-mostra o erro por unidade
 plot(mds_result, plot.type = "stressplot", main = "MDS - Stress per Point")
-
 
 #cálculo manual do Normalized Stress
 dhat_matrix <- as.matrix(mds_result$dhat)
@@ -332,7 +331,7 @@ cat("Normalized Stress:", round(normalized_stress, 4), "\n")
 # -------------------
 dist_matrix <- dist(scaled_df)
 
-#MDS clássico
+# MDS clássico
 mds_result <- cmdscale(dist_matrix, k = 2, eig = TRUE)
 
 mds_coords <- as.data.frame(mds_result$points)
@@ -346,7 +345,6 @@ abline(h = 0, v = 0, col = "gray", lty = 2)
 
 text(mds_coords$Dim1, mds_coords$Dim2, labels = rownames(mds_coords), cex = 0.6, pos = 3)
 
-#stress
 eig_vals <- mds_result$eig
 var_explained <- sum(eig_vals[1:2]) / sum(abs(eig_vals))
 cat("Variance explained:", round(var_explained * 100, 2), "%\n")
