@@ -282,7 +282,10 @@ fa_pa <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="pa",
 
 fa_pa$communality # how much of the variable variance is explained by the common factors
 # sum of squares of the pattern loadings for each variable
+write.csv(fa_pa$communality, "communalities.csv")
+
 print(fa_pa$loadings, cutoff = 0)
+write.csv(print(fa_pa$loadings, cutoff = 0), "loadings.csv")
 # loadings: correlations between the observed variables and the common factors 
 #                 
 # SS loadings     # sum of squares of loadings for each factor
@@ -290,11 +293,12 @@ print(fa_pa$loadings, cutoff = 0)
 # Cumulative Var  # This shows the cumulative variance explained as you add more factors. Total with 3 factors: 55.7%
 
 fa_pa$uniquenesses # specific variance. equal to 1 - communality_i, since all variables have variance = 1 (stardardized bc orthogonal model, done when computing correlation matrix)
+write.csv(fa_pa$uniquenesses, "specificvariance.csv")
 
 # residual correlations, must be small for good fit
-corrplot(fa_pa$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
-         cl.cex = 1,    
-         number.cex = 0.8)  # diagonal = specific variance
+corrplot(fa_pa$residual,is.corr = FALSE, method = "color", type = "upper",tl.cex = 0.6, addCoef.col = "black", 
+         cl.cex = 0.6,    
+         number.cex = 0.5)  # diagonal = specific variance
 
 ### MIN RESIDUALS (unweighted least squares)
 fa_minres <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="minres", 
@@ -302,9 +306,9 @@ fa_minres <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="minres",
 fa_minres$communality 
 print(fa_minres$loadings, cutoff = 0)
 fa_minres$uniquenesses
-corrplot(fa_minres$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
-         cl.cex = 1,    
-         number.cex = 0.8) 
+corrplot(fa_minres$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.6, addCoef.col = "black", 
+         cl.cex = 0.6,    
+         number.cex = 0.5)
 
 ## WEIGHTED LEAST SQUARES
 
@@ -313,9 +317,9 @@ fa_wls <- fa(cor_matrix, nfactors=3, n.obs=nrow(scaled_df), fm="wls",
 fa_wls$communality 
 print(fa_wls$loadings, cutoff = 0)
 fa_wls$uniquenesses
-corrplot(fa_wls$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.8, addCoef.col = "black", 
-         cl.cex = 1,    
-         number.cex = 0.8) 
+corrplot(fa_wls$residual,is.corr = FALSE, method = "color", type = "upper", tl.cex = 0.6, addCoef.col = "black", 
+         cl.cex = 0.6,    
+         number.cex = 0.5)
 
 # won't use maximum likelihood method because some variables distributions have strong deviations from normality
 
