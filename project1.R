@@ -212,34 +212,40 @@ for (i in 1:(length(vars) - 1)) {
 ## PRINCIPAL COMPONENT ANALYSIS ##
 ###########################################################
 
-#PCA 
-pca_result <- prcomp(scaled_df, center = TRUE, scale. = TRUE)
+library(FactoMineR)
+library(factoextra)
 
-summary(pca_result)
+PCA_games <- PCA(scaled_df, graph = FALSE)
 
-plot(pca_result, type = "l", main = "Scree Plot of Principal Components")
+#eigenvalues
+PCA_games$eig
+barplot(PCA_games$eig[,1], main = "Eigenvalues", names.arg = 1:nrow(PCA_games$eig),
+        xlab = "Principal Component", ylab = "Eigenvalue")
 
-#variância explicada acumulada
-explained_var <- summary(pca_result)$importance[2, ]  #proporção da variância
-cum_var <- summary(pca_result)$importance[3, ]        #variância acumulada
+#loadings
+PCA_games$var$coord  
+#write.csv(PCA_games$var$coord, "pca_coord.csv")
 
-barplot(explained_var, names.arg = paste0("PC", 1:length(explained_var)),
-        las = 2, main = "Explained Variance by Component", ylab = "Proportion")
+#contribution of the variables to the PCs
+PCA_games$var$contrib  
+#write.csv(PCA_games$var$contrib, "pca_contrib.csv")
 
-#componentes principais 
-biplot(pca_result, scale = 0, cex = 0.6)
+#quality of representation
+PCA_games$var$cos2
+#write.csv(PCA_games$var$cos2, "pca_cos2.csv")
 
-#loadings dos componentes
-loadings <- pca_result$rotation
-loadings_df <- as.data.frame(loadings)
-print(loadings_df)
-write.csv(loadings_df, "pca_loadings.csv", row.names = TRUE)
+#scores 
+head(PCA_games$ind$coord)
+#write.csv(PCA_games$ind$coord, "pca_scores.csv")
 
-#scores dos jogos nos PCs
-scores <- pca_result$x
-print(loadings_df)
-write.csv(scores, "pca_scores.csv", row.names = TRUE)
+fviz_pca_ind(PCA_games, col.ind = "cos2", gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE)
 
+fviz_pca_var(PCA_games, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             title = "Variable Contributions to PCs")
+
+plot(PCA_games, choix = "var", axes = c(1,2))  
 
 ###########################################################
 ## FACTOR ANALYSIS ##
