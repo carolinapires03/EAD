@@ -244,8 +244,18 @@ fviz_pca_ind(PCA_games, col.ind = "cos2", gradient.cols = c("#00AFBB", "#E7B800"
 fviz_pca_var(PCA_games, col.var = "contrib",
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
              title = "Variable Contributions to PCs")
+fviz_pca_var(PCA_games, col.var = "contrib", axes = c(1,3),
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             title = "Variable Contributions to PCs")
+fviz_pca_var(PCA_games, col.var = "contrib", axes = c(2,3),
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             title = "Variable Contributions to PCs")
 
-plot(PCA_games, choix = "var", axes = c(1,2))  
+
+# plot(PCA_games, choix = "var", axes = c(1,2))  
+# plot(PCA_games, choix = "var", axes = c(1,3))
+# plot(PCA_games, choix = "var", axes = c(2,3))  
+
 
 ###########################################################
 ## FACTOR ANALYSIS ##
@@ -257,9 +267,7 @@ KMO(cor_matrix) # data is suitable for FA overall MSA = 0.7
 cortest.bartlett(cor_matrix, n = 190) # p.value << 0.05, data is suitable for FA
 
 # choosing number of factors
-pca_result <- principal(cor_matrix, nfactors = ncol(scaled_df), rotate = "none", covar=FALSE)
-pca_result$values
-# Eigenvalues greater than 1: first 3
+# Using previous PCA: Eigenvalues greater than 1 are the first 3
 
 fa.parallel(cor_matrix, fa = "fa", n.iter = 100, n.obs=nrow(scaled_df))
 # Parallel analysis suggests that the number of factors =  3
