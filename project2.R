@@ -483,4 +483,41 @@ metrics_selected <- metrics[, c("Precision", "Recall", "F1", "Balanced Accuracy"
 round(metrics_selected, 3)
 
 ############################## QDA ################################
+library(MASS)
+qda_model <- qda(x = X_train_clean, grouping = Y_train)
+qda_pred <- predict(qda_model, newdata = X_test_clean)
 
+qda_classes <- qda_pred$class
+qda_probs <- qda_pred$posterior
+
+library(caret)
+qda_conf <- confusionMatrix(factor(qda_classes, levels = levels(Y_test)),
+                            factor(Y_test, levels = levels(Y_test)))
+
+print(qda_conf)
+cat("Accuracy - modelo QDA:", round(qda_conf$overall["Accuracy"], 4), "\n")
+
+qda_metrics <- as.data.frame(qda_conf$byClass)
+qda_metrics_selected <- qda_metrics[, c("Precision", "Recall", "F1", "Balanced Accuracy")]
+round(qda_metrics_selected, 3)
+
+library(pROC)
+
+true_classes <- Y_test
+class_levels <- levels(true_classes)
+
+for (class in class_levels) {
+  true_bin <- as.numeric(true_classes == class)
+  pred_prob <- qda_probs[, class]
+  
+  roc_obj <- roc(response = true_bin, predictor = pred_prob)
+  
+  par(mfrow = c(1, 1))  # garantir uma janela de plot por curva
+  plot(roc_obj,
+       main = paste("QDA - ROC -", class),
+       col = "darkred",
+       lwd = 2,
+       print.auc = TRUE,
+       print.auc.y = 0.4)
+  abline(a = 0, b = 1, lty = 2, col = "gray")
+}
