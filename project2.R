@@ -339,5 +339,59 @@ ggplot(scores2, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
   labs(title = "EM Clustering com Clusters", x = "PC1", y = "PC2", color = "Cluster")
 
 
-# TODO: 
-# fix GMM clustering always choosing highest number of clusters
+################## Avaliação com várias métricas para diferentes valores de G
+G_range <- 2:10
+results <- data.frame(
+  G = integer(),
+  BIC = numeric(),
+  CH_Index = numeric(),
+  Silhouette = numeric(),
+  Dunn_Index = numeric()
+)
+
+for (k in G_range) {
+  mod <- Mclust(scaled_df, G = k)
+  bic_val <- mod$bic
+  
+  cl <- mod$classification
+  dist_mat <- dist(scaled_df)
+  stats <- cluster.stats(dist_mat, cl)
+  
+  sil <- mean(silhouette(cl, dist_mat)[, 3])
+  
+  results <- rbind(results, data.frame(
+    G = k,
+    BIC = bic_val,
+    CH_Index = stats$ch,
+    Silhouette = sil,
+    Dunn_Index = stats$dunn
+  ))
+}
+
+print(results)
+
+#G       BIC CH_Index Silhouette Dunn_Index
+#2 -98192.42 310.6080  0.1074625 0.05189542
+#3 -97018.96 318.1936  0.1006138 0.03419449
+#4 -93797.23 426.9783  0.1552033 0.04504935
+#5 -91024.49 492.4574  0.1572013 0.04684956
+#6 -89126.94 542.1333  0.1962951 0.04137778
+#7 -87903.03 490.3373  0.1914104 0.05770785
+#8 -86867.07 486.6964  0.1490868 0.03423736
+#9 -85588.22 422.5850  0.1525218 0.03358945
+#10 -84899.85 367.4908  0.1543238 0.03140038
+
+#BIC - qt mais alto(menos negativo), melhor : melhor valor G=10 
+#CH_Index - qt maior, melhor : G=6 (seguido de G=5)
+#Silhouette - qt mais perto de 1, melhor : melhor valor: G=6 (depois G=5).
+#Dunn_Index - qt maior, melhor : G=7 (seguido de G=2 e depois G=5)
+
+par(mfrow = c(2, 2))
+plot(results$G, results$BIC, type = "b", pch = 19, col = "blue",
+     main = "BIC vs G", xlab = "Clusters (G)", ylab = "BIC")
+plot(results$G, results$CH_Index, type = "b", pch = 19, col = "green",
+     main = "CH Index vs G", xlab = "Clusters (G)", ylab = "Calinski-Harabasz")
+plot(results$G, results$Silhouette, type = "b", pch = 19, col = "orange",
+     main = "Silhouette vs G", xlab = "Clusters (G)", ylab = "Silhouette")
+plot(results$G, results$Dunn_Index, type = "b", pch = 19, col = "purple",
+     main = "Dunn Index vs G", xlab = "Clusters (G)", ylab = "Dunn")
