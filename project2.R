@@ -1,7 +1,10 @@
 df = read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto2/fertilizer_recommendation_dataset.csv", sep=",")
-df = read.csv("/home/barbara/MDS/EAD/EAD/fertilizer_recommendation_dataset.csv", sep=",")
 summary(df)
-dim(df) # 3100 12
+
+### Clustering
+
+df = df[,1:9]
+df
 
 library(factoextra)
 library(cluster)
@@ -395,3 +398,89 @@ plot(results$G, results$Silhouette, type = "b", pch = 19, col = "orange",
      main = "Silhouette vs G", xlab = "Clusters (G)", ylab = "Silhouette")
 plot(results$G, results$Dunn_Index, type = "b", pch = 19, col = "purple",
      main = "Dunn Index vs G", xlab = "Clusters (G)", ylab = "Dunn")
+
+
+############################## LDA ################################
+
+final_df <- as.data.frame(scaled_df)
+final_df$Soil <- as.factor(read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto2/fertilizer_recommendation_dataset.csv", sep=",")$Soil)
+
+X <- final_df[, -ncol(final_df)]
+Y <- final_df$Soil
+
+set.seed(123)
+train_idx <- sample(1:nrow(X), size = 0.7 * nrow(X))
+test_idx <- setdiff(1:nrow(X), train_idx)
+
+X_train <- X[train_idx, ]
+X_test <- X[test_idx, ]
+Y_train <- Y[train_idx]
+Y_test <- Y[test_idx]
+
+is_constant_within_any_group <- function(column, group) {
+  any(tapply(column, group, function(x) length(unique(x)) == 1))
+}
+
+cols_to_remove <- sapply(as.data.frame(X_train), is_constant_within_any_group, group = Y_train)
+
+X_train_clean <- X_train[, !cols_to_remove]
+X_test_clean <- X_test[, !cols_to_remove]
+
+library(MASS)
+lda_model <- lda(x = X_train_clean, grouping = Y_train)
+lda_pred <- predict(lda_model, newdata = X_test_clean)
+
+conf_mat <- table(Predito = lda_pred$class, Real = Y_test)
+print(conf_mat)
+
+accuracy <- mean(lda_pred$class == Y_test)
+cat("Accuracy - LDA multiclasse:", round(accuracy, 4), "\n")
+
+lda_proj <- as.data.frame(predict(lda_model)$x)
+lda_proj$Soil <- Y_train
+
+library(ggplot2)
+ggplot(lda_proj, aes(x = LD1, y = LD2, color = Soil)) +
+  geom_point(alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "LDA Multiclasse",
+       x = "LD1", y = "LD2")
+
+#curvas ROC 
+library(pROC)
+library(caret)
+library(reshape2)
+library(dplyr)
+
+lda_probs <- predict(lda_model, newdata = X_test_clean)$posterior
+true_classes <- Y_test
+class_levels <- levels(true_classes)
+
+for (class in class_levels) {
+  true_bin <- as.numeric(true_classes == class)
+  pred_prob <- lda_probs[, class]
+  
+  roc_obj <- roc(response = true_bin, predictor = pred_prob)
+  
+  par(mfrow = c(1, 1))
+  plot(roc_obj,
+       main = paste("ROC -", class),
+       col = "darkblue",
+       lwd = 2,
+       print.auc = TRUE,
+       print.auc.y = 0.4)
+  abline(a = 0, b = 1, lty = 2, col = "gray")
+  
+}
+
+#matriz de confusão
+conf_matrix <- confusionMatrix(factor(lda_classes, levels = class_levels),
+                               factor(true_classes, levels = class_levels))
+print(conf_matrix)
+
+metrics <- as.data.frame(conf_matrix$byClass)
+metrics_selected <- metrics[, c("Precision", "Recall", "F1", "Balanced Accuracy")]
+round(metrics_selected, 3)
+
+############################## QDA ################################
+
