@@ -1,5 +1,6 @@
-df = read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto2/fertilizer_recommendation_dataset.csv", sep=",")
-summary(df)
+#raw_df = read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto2/fertilizer_recommendation_dataset.csv", sep=",")
+raw_df = read.csv("/home/barbara/MDS/EAD/EAD/fertilizer_recommendation_dataset.csv")
+summary(raw_df)
 
 library(factoextra)
 library(cluster)
@@ -8,12 +9,19 @@ library(fastDummies)
 library(mclust)
 library(ggplot2)
 library(dplyr)
+library(MASS)
+library(pROC)
+library(caret)
+library(reshape2)
+library(dplyr)
+library(caret)
+library(pROC)
 
 set.seed(123)
 
 ############################## Preprocessing ################################
 
-df = df[,1:9]
+df = raw_df[,1:9]
 df
 
 for (col in names(df)[1:8]) {
@@ -336,9 +344,9 @@ plot(results$G, results$Silhouette, type = "b", pch = 19, col = "orange",
 plot(results$G, results$Dunn_Index, type = "b", pch = 19, col = "purple",
      main = "Dunn Index vs G", xlab = "Clusters (G)", ylab = "Dunn")
 
-# APLYING GMM
+# Aplying GMM
 
-#5 clusters
+# 5 clusters
 mod <- Mclust(scaled_df, G=5)
 summary(mod)
 
@@ -359,96 +367,92 @@ ggplot(scores, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
 mod1 <- Mclust(scaled_df, G = 6)
 summary(mod1)
 
-df4 <- as.data.frame(scaled_df)
-df4$em_cluster1 <- as.factor(mod1$classification)
+df6 <- as.data.frame(scaled_df)
+df6$em_cluster1 <- as.factor(mod1$classification)
 
 pc1 <- princomp(scaled_df)
 scores1 <- as.data.frame(pc1$scores)  
 
-scores1$em_cluster <- df4$em_cluster1
+scores1$em_cluster <- df6$em_cluster1
 
 ggplot(scores1, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
   geom_point() +
   theme_minimal() +
   labs(title = "EM Clustering with 6 Clusters", x = "PC1", y = "PC2", color = "Cluster")
 
-#sem especificar os clusters
+# Sem especificar os clusters
 mod2 <- Mclust(scaled_df, G=seq(1:10))
 summary(mod2)
 mod2$G
 
 par(mfrow = c(1, 1))
 plot(mod2, what='BIC')
-#plot(mod2, what = "uncertainty")
 
-df <- as.data.frame(scaled_df)
-df $em_cluster <- as.factor(mod2$classification)
+df_em <- as.data.frame(scaled_df)
+df_em$em_cluster <- as.factor(mod2$classification)
 
 pc2 <- princomp(scaled_df)
 scores2 <- as.data.frame(pc2$scores)  
 
-scores2$em_cluster <- df$em_cluster
+scores2$em_cluster <- df_em$em_cluster
 
 ggplot(scores2, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
   geom_point() +
   theme_minimal() +
   labs(title = "EM Clustering com Clusters", x = "PC1", y = "PC2", color = "Cluster")
 
-############################## LDA ################################
 
-final_df <- as.data.frame(scaled_df)
-final_df$Soil <- as.factor(read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto2/fertilizer_recommendation_dataset.csv", sep=",")$Soil)
+############################## Supervised Learning ################################
 
-X <- final_df[, -ncol(final_df)]
-Y <- final_df$Soil
+final_df <- subset(df, select = -Soil)
+Y <- as.factor(df$Soil)
 
-set.seed(123)
-train_idx <- sample(1:nrow(X), size = 0.7 * nrow(X))
-test_idx <- setdiff(1:nrow(X), train_idx)
+names(final_df)
 
-X_train <- X[train_idx, ]
-X_test <- X[test_idx, ]
+train_idx <- sample(1:nrow(final_df), size = 0.7 * nrow(final_df))
+test_idx <- setdiff(1:nrow(final_df), train_idx)
+
+X_train <- final_df[train_idx, ]
+X_test <- final_df[test_idx, ]
+
+# Fit scaler on training data only
+X_train <- scale(X_train[, -ncol(X_train)])
+
+# Use training means and sds to scale the test data
+train_mean <- attr(X_train, "scaled:center")
+train_sd <- attr(X_train, "scaled:scale")
+X_test <- scale(X_test[, -ncol(X_test)], center = train_mean, scale = train_sd)
+
 Y_train <- Y[train_idx]
 Y_test <- Y[test_idx]
 
-is_constant_within_any_group <- function(column, group) {
-  any(tapply(column, group, function(x) length(unique(x)) == 1))
-}
 
-cols_to_remove <- sapply(as.data.frame(X_train), is_constant_within_any_group, group = Y_train)
+############################## LDA ################################
 
-X_train_clean <- X_train[, !cols_to_remove]
-X_test_clean <- X_test[, !cols_to_remove]
+lda_model <- lda(x = X_train, grouping = Y_train)
+lda_pred <- predict(lda_model, newdata = X_test)
 
-library(MASS)
-lda_model <- lda(x = X_train_clean, grouping = Y_train)
-lda_pred <- predict(lda_model, newdata = X_test_clean)
-
-conf_mat <- table(Predito = lda_pred$class, Real = Y_test)
+conf_mat <- table(Predicted = lda_pred$class, Real = Y_test)
 print(conf_mat)
 
 accuracy <- mean(lda_pred$class == Y_test)
-cat("Accuracy - LDA multiclasse:", round(accuracy, 4), "\n")
+cat("Accuracy - LDA multiclass:", round(accuracy, 4), "\n")
 
 lda_proj <- as.data.frame(predict(lda_model)$x)
 lda_proj$Soil <- Y_train
 
-library(ggplot2)
 ggplot(lda_proj, aes(x = LD1, y = LD2, color = Soil)) +
   geom_point(alpha = 0.7) +
   theme_minimal() +
-  labs(title = "LDA Multiclasse",
+  labs(title = "LDA Multiclass",
        x = "LD1", y = "LD2")
 
-#curvas ROC 
-library(pROC)
-library(caret)
-library(reshape2)
-library(dplyr)
+# curvas ROC 
 
-lda_probs <- predict(lda_model, newdata = X_test_clean)$posterior
+lda_probs <- lda_pred$posterior
 true_classes <- Y_test
 class_levels <- levels(true_classes)
+lda_classes <- lda_pred$class
 
 for (class in class_levels) {
   true_bin <- as.numeric(true_classes == class)
@@ -467,35 +471,31 @@ for (class in class_levels) {
   
 }
 
-#matriz de confusão
+# métricas
 conf_matrix <- confusionMatrix(factor(lda_classes, levels = class_levels),
                                factor(true_classes, levels = class_levels))
-print(conf_matrix)
-
 metrics <- as.data.frame(conf_matrix$byClass)
-metrics_selected <- metrics[, c("Precision", "Recall", "F1", "Balanced Accuracy")]
+metrics_selected <- metrics[, c("Precision", "Recall", "F1")]
 round(metrics_selected, 3)
 
+
 ############################## QDA ################################
-library(MASS)
-qda_model <- qda(x = X_train_clean, grouping = Y_train)
-qda_pred <- predict(qda_model, newdata = X_test_clean)
+
+qda_model <- qda(x = X_train, grouping = Y_train)
+qda_pred <- predict(qda_model, newdata = X_test)
 
 qda_classes <- qda_pred$class
 qda_probs <- qda_pred$posterior
 
-library(caret)
 qda_conf <- confusionMatrix(factor(qda_classes, levels = levels(Y_test)),
                             factor(Y_test, levels = levels(Y_test)))
 
 print(qda_conf)
-cat("Accuracy - modelo QDA:", round(qda_conf$overall["Accuracy"], 4), "\n")
+cat("Accuracy - QDA:", round(qda_conf$overall["Accuracy"], 4), "\n")
 
 qda_metrics <- as.data.frame(qda_conf$byClass)
-qda_metrics_selected <- qda_metrics[, c("Precision", "Recall", "F1", "Balanced Accuracy")]
+qda_metrics_selected <- qda_metrics[, c("Precision", "Recall", "F1")]
 round(qda_metrics_selected, 3)
-
-library(pROC)
 
 true_classes <- Y_test
 class_levels <- levels(true_classes)
