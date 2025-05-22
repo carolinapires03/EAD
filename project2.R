@@ -163,7 +163,7 @@ df_whitened = pcp$scores %*% diag(1/pcp$sdev)
 fviz_nbclust(df_whitened, kmeans, method = "wss", k.max=15) + 
   theme_minimal() + 
   ggtitle("Elbow Method")
-# k = 8
+# k = 9
 
 # Silhouette Method
 fviz_nbclust(df_whitened, kmeans , method = "silhouette", k.max=15) + 
@@ -219,7 +219,7 @@ res$within.cluster.ss
 
 # stability test for non-whitened
 
-results <- replicate(30, kmeans(scaled_df, centers = 5, nstart = 25)$cluster)
+results <- replicate(10, kmeans(scaled_df, centers = 5, nstart = 25)$cluster)
 ari_matrix <- matrix(NA, ncol = 10, nrow = 10)
 
 for (i in 1:10) {
