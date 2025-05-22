@@ -1,6 +1,6 @@
 library(dplyr)
 
-bgg = read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto1/bgg_db_1806.csv", sep=",")
+bgg = read.csv("/home/bgg_db_1806.csv", sep=",")
 
 df <- subset(bgg, select = -c(rank, bgg_url, game_id, names, image_url, designer, year))
 df$num_categories <- sapply(strsplit(df$category, ","), function(x) if (is.na(x[1])) 0 else length(x))

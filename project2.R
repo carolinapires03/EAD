@@ -403,6 +403,7 @@ ggplot(scores2, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
 
 
 ############################## Supervised Learning ################################
+set.seed(123)
 
 final_df <- subset(df, select = -Soil)
 Y <- as.factor(df$Soil)
