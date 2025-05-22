@@ -1,11 +1,6 @@
 df = read.csv("~/Documents/UP/24 25/2ºsemestre/EAD/projeto2/fertilizer_recommendation_dataset.csv", sep=",")
 summary(df)
 
-### Clustering
-
-df = df[,1:9]
-df
-
 library(factoextra)
 library(cluster)
 library(fpc)
@@ -31,7 +26,7 @@ for (col in names(df)[1:8]) {
   par(mfrow = c(1, 1))
 }
 
-# remove wrong values 
+# replace wrong values 
 
 df <- df %>%
   mutate(across(
@@ -284,65 +279,7 @@ clusterboot_result$bootmean # mean Jaccard stability
 
 ################### Gaussian Mixture Models (EM algorithm) ###############
 
-#5 clusters
-mod <- Mclust(scaled_df, G=5)
-summary(mod)
-
-#plot(mod, what = "classification")
-
-df5 <- as.data.frame(scaled_df)
-df5$em_cluster <- as.factor(mod$classification)
-
-pc <- princomp(scaled_df)
-scores <- as.data.frame(pc$scores)
-
-scores$em_cluster <- df5$em_cluster
-
-ggplot(scores, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
-  geom_point() +
-  theme_minimal() +
-  labs(title = "EM Clustering com 5 Clusters", x = "PC1", y = "PC2", color = "Cluster")
-
-# com 4 clusters
-mod1 <- Mclust(scaled_df, G = 4)
-summary(mod1)
-
-df4 <- as.data.frame(scaled_df)
-df4$em_cluster1 <- as.factor(mod1$classification)
-
-pc1 <- princomp(scaled_df)
-scores1 <- as.data.frame(pc1$scores)  
-
-scores1$em_cluster <- df4$em_cluster1
-
-ggplot(scores1, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
-  geom_point() +
-  theme_minimal() +
-  labs(title = "EM Clustering com 4 Clusters", x = "PC1", y = "PC2", color = "Cluster")
-
-#sem especificar os clusters
-mod2 <- Mclust(scaled_df, G=seq(1:30))
-summary(mod2)
-mod2$G
-
-plot(mod2, what='BIC')
-#plot(mod2, what = "uncertainty")
-
-df <- as.data.frame(scaled_df)
-df $em_cluster <- as.factor(mod2$classification)
-
-pc2 <- princomp(scaled_df)
-scores2 <- as.data.frame(pc2$scores)  
-
-scores2$em_cluster <- df$em_cluster
-
-ggplot(scores2, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
-  geom_point() +
-  theme_minimal() +
-  labs(title = "EM Clustering com Clusters", x = "PC1", y = "PC2", color = "Cluster")
-
-
-################## Avaliação com várias métricas para diferentes valores de G
+#Avaliação com várias métricas para diferentes valores de G
 G_range <- 2:10
 results <- data.frame(
   G = integer(),
@@ -399,6 +336,63 @@ plot(results$G, results$Silhouette, type = "b", pch = 19, col = "orange",
 plot(results$G, results$Dunn_Index, type = "b", pch = 19, col = "purple",
      main = "Dunn Index vs G", xlab = "Clusters (G)", ylab = "Dunn")
 
+# APLYING GMM
+
+#5 clusters
+mod <- Mclust(scaled_df, G=5)
+summary(mod)
+
+df5 <- as.data.frame(scaled_df)
+df5$em_cluster <- as.factor(mod$classification)
+
+pc <- princomp(scaled_df)
+scores <- as.data.frame(pc$scores)
+
+scores$em_cluster <- df5$em_cluster
+
+ggplot(scores, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "EM Clustering com 5 Clusters", x = "PC1", y = "PC2", color = "Cluster")
+
+# com 6 clusters
+mod1 <- Mclust(scaled_df, G = 6)
+summary(mod1)
+
+df4 <- as.data.frame(scaled_df)
+df4$em_cluster1 <- as.factor(mod1$classification)
+
+pc1 <- princomp(scaled_df)
+scores1 <- as.data.frame(pc1$scores)  
+
+scores1$em_cluster <- df4$em_cluster1
+
+ggplot(scores1, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "EM Clustering with 6 Clusters", x = "PC1", y = "PC2", color = "Cluster")
+
+#sem especificar os clusters
+mod2 <- Mclust(scaled_df, G=seq(1:10))
+summary(mod2)
+mod2$G
+
+par(mfrow = c(1, 1))
+plot(mod2, what='BIC')
+#plot(mod2, what = "uncertainty")
+
+df <- as.data.frame(scaled_df)
+df $em_cluster <- as.factor(mod2$classification)
+
+pc2 <- princomp(scaled_df)
+scores2 <- as.data.frame(pc2$scores)  
+
+scores2$em_cluster <- df$em_cluster
+
+ggplot(scores2, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "EM Clustering com Clusters", x = "PC1", y = "PC2", color = "Cluster")
 
 ############################## LDA ################################
 
@@ -521,3 +515,4 @@ for (class in class_levels) {
        print.auc.y = 0.4)
   abline(a = 0, b = 1, lty = 2, col = "gray")
 }
+
