@@ -517,3 +517,17 @@ for (class in class_levels) {
   abline(a = 0, b = 1, lty = 2, col = "gray")
 }
 
+#visualization
+library(gridExtra)
+
+p1 <- ggplot(pca_df, aes(x = PC1, y = PC2, color = Actual)) +
+  geom_point(alpha = 0.6, size = 2) +
+  labs(title = "Real Classes (PCA Projection)", x = "PC1", y = "PC2") +
+  theme_minimal()
+
+p2 <- ggplot(pca_df, aes(x = PC1, y = PC2, color = Predicted)) +
+  geom_point(alpha = 0.6, size = 2) +
+  labs(title = "Predicted classes by QDA", x = "PC1", y = "PC2") +
+  theme_minimal()
+
+grid.arrange(p1, p2, ncol = 2)
