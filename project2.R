@@ -163,7 +163,7 @@ df_whitened = pcp$scores %*% diag(1/pcp$sdev)
 fviz_nbclust(df_whitened, kmeans, method = "wss", k.max=15) + 
   theme_minimal() + 
   ggtitle("Elbow Method")
-# k = 9
+# k = 8
 
 # Silhouette Method
 fviz_nbclust(df_whitened, kmeans , method = "silhouette", k.max=15) + 
@@ -219,7 +219,7 @@ res$within.cluster.ss
 
 # stability test for non-whitened
 
-results <- replicate(10, kmeans(scaled_df, centers = 5, nstart = 25)$cluster)
+results <- replicate(30, kmeans(scaled_df, centers = 5, nstart = 25)$cluster)
 ari_matrix <- matrix(NA, ncol = 10, nrow = 10)
 
 for (i in 1:10) {
@@ -287,7 +287,7 @@ clusterboot_result$bootmean # mean Jaccard stability
 
 ################### Gaussian Mixture Models (EM algorithm) ###############
 
-#Avaliação com várias métricas para diferentes valores de G
+#Evaluation with various metrics for different values of G
 G_range <- 2:10
 results <- data.frame(
   G = integer(),
@@ -327,7 +327,7 @@ print(results)
 #7 -87903.03 490.3373  0.1914104 0.05770785
 #8 -86867.07 486.6964  0.1490868 0.03423736
 #9 -85588.22 422.5850  0.1525218 0.03358945
-#10 -84899.85 367.4908  0.1543238 0.03140038
+#10 -84904.44 375.3745  0.1557629 0.03358945
 
 #BIC - qt mais alto(menos negativo), melhor : melhor valor G=10 
 #CH_Index - qt maior, melhor : G=6 (seguido de G=5)
@@ -361,9 +361,9 @@ scores$em_cluster <- df5$em_cluster
 ggplot(scores, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
   geom_point() +
   theme_minimal() +
-  labs(title = "EM Clustering com 5 Clusters", x = "PC1", y = "PC2", color = "Cluster")
+  labs(title = "EM Clustering with 5 Clusters", x = "PC1", y = "PC2", color = "Cluster")
 
-# com 6 clusters
+# with 6 clusters
 mod1 <- Mclust(scaled_df, G = 6)
 summary(mod1)
 
@@ -380,7 +380,7 @@ ggplot(scores1, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
   theme_minimal() +
   labs(title = "EM Clustering with 6 Clusters", x = "PC1", y = "PC2", color = "Cluster")
 
-# Sem especificar os clusters
+# without specifying the clusters
 mod2 <- Mclust(scaled_df, G=seq(1:10))
 summary(mod2)
 mod2$G
@@ -403,7 +403,7 @@ ggplot(scores2, aes(x = Comp.1, y = Comp.2, color = em_cluster)) +
 
 
 ############################## Supervised Learning ################################
-set.seed(123)
+set.seed(43)
 
 final_df <- subset(df, select = -Soil)
 Y <- as.factor(df$Soil)
@@ -416,10 +416,10 @@ test_idx <- setdiff(1:nrow(final_df), train_idx)
 X_train <- final_df[train_idx, ]
 X_test <- final_df[test_idx, ]
 
-# Fit scaler on training data only
+# fit scaler on training data only
 X_train <- scale(X_train[, -ncol(X_train)])
 
-# Use training means and sds to scale the test data
+# use training means and sds to scale the test data
 train_mean <- attr(X_train, "scaled:center")
 train_sd <- attr(X_train, "scaled:scale")
 X_test <- scale(X_test[, -ncol(X_test)], center = train_mean, scale = train_sd)
@@ -448,7 +448,7 @@ ggplot(lda_proj, aes(x = LD1, y = LD2, color = Soil)) +
   labs(title = "LDA Multiclass",
        x = "LD1", y = "LD2")
 
-# curvas ROC 
+# ROC curves 
 
 lda_probs <- lda_pred$posterior
 true_classes <- Y_test
@@ -472,7 +472,7 @@ for (class in class_levels) {
   
 }
 
-# métricas
+# metrics
 conf_matrix <- confusionMatrix(factor(lda_classes, levels = class_levels),
                                factor(true_classes, levels = class_levels))
 metrics <- as.data.frame(conf_matrix$byClass)
@@ -507,9 +507,9 @@ for (class in class_levels) {
   
   roc_obj <- roc(response = true_bin, predictor = pred_prob)
   
-  par(mfrow = c(1, 1))  # garantir uma janela de plot por curva
+  par(mfrow = c(1, 1)) 
   plot(roc_obj,
-       main = paste("QDA - ROC -", class),
+       main = paste("ROC -", class),
        col = "darkred",
        lwd = 2,
        print.auc = TRUE,
@@ -517,7 +517,7 @@ for (class in class_levels) {
   abline(a = 0, b = 1, lty = 2, col = "gray")
 }
 
-#visualization
+# visualization
 library(gridExtra)
 
 p1 <- ggplot(pca_df, aes(x = PC1, y = PC2, color = Actual)) +
